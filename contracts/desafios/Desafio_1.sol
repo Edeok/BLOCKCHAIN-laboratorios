@@ -58,7 +58,8 @@ pragma solidity 0.8.19;
  * npx hardhat test test/DesafioTesting_1.js
  */
 contract Desafio_1 {
- 
+    // Mapping simple
+    // map: usuario => cantidad activosSimple
     mapping(address => uint256) public activosSimple;
 
     function guardarActivoSimple(address _direccion, uint256 _valor) public {
@@ -66,39 +67,33 @@ contract Desafio_1 {
         activosSimple[_direccion] = _valor;
     }
 
- 
- 
-
     // Mapping double
     // map: usuario => activoId => cantidad activosDouble;
-    
     mapping(address => mapping(uint256 => uint256)) public activosDouble;
 
     function guardarActivoDoble(address _usuario, uint256 _activoId, uint256 _cantidad) public {
-
-        require(_usuario != address(0), "El address no puede ser 0x00");
-        require(_cantidad >= 1 && _cantidad <= 999999, "Codigo de activo invalido" );   
-        require(_activoId >= 1 && _activoId <= 999999, "El _activoId debe estar en el rango de 1 a 999999" );
-
-        activosDouble[_usuario][_activoId] = _cantidad;
+    require(_usuario != address(0), "El address no puede ser 0x00");
+    require(_activoId >= 1 && _activoId <= 999999, "El _activoId debe estar en el rango de 1 a 999999");
+    activosDouble[_usuario][_activoId] = _cantidad;
 }
 
-    
-      error CiudadInvalidaError(uint256 ciudadId);
-      mapping(uint256 => mapping(address => mapping(uint256 => uint256))) public activosTriple;
+   
+    // Mapping triple
+mapping(uint256 => mapping(address => mapping(uint256 => uint256))) public activosTriple;
+error CiudadInvalidaError(uint256 ciudadId);
 
-      function guardarActivoTriple(address _usuario, uint256 _ciudadId, uint256 _activoId) public {
-
+function guardarActivoTriple(address _usuario, uint256 _activoId, uint256 _ciudadId, uint256 _cantidad) public {
     require(_usuario != address(0), "El address no puede ser 0x00");
     require(_activoId >= 1 && _activoId <= 999999, "Codigo de activo invalido");
     require(_ciudadId >= 1 && _ciudadId <= 999999, "Codigo de ciudad invalido");
 
+    // Lanzar el error CiudadInvalidaError si el código de ciudad no es válido
+    if (_ciudadId < 1 || _ciudadId > 999999) {
+        revert CiudadInvalidaError(_ciudadId);
+    }
 
-     
-      activosTriple[_ciudadId][_usuario][_activoId] = _activoId;
-
- 
-    
+    activosTriple[_ciudadId][_usuario][_activoId] = _cantidad;
 }
+
 
 }

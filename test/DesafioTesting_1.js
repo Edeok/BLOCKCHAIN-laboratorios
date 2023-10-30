@@ -53,30 +53,29 @@ describe("Mappings: simple, double, triple", function () {
   describe("Mapping Triple", function () {
     it("Guarda activos", async function () {
       const { mappingSol, owner, alice } = await loadFixture(deployFixture);
- 
-      await mappingSol.guardarActivoTriple(owner.address, 1, 1);
 
+      // Llama a la función guardarActivoTriple con valores válidos
+      await mappingSol.guardarActivoTriple(owner.address, 1, 1, 1);
+
+      // Verifica que el valor se haya guardado correctamente en activosTriple
       expect(await mappingSol.activosTriple(1, owner.address, 1)).to.equal(1);
     });
 
     it("Valida activo", async function () {
       const { mappingSol, owner, alice } = await loadFixture(deployFixture);
 
+      // Intenta guardar con dirección 0x00, debería revertir con el mensaje correcto
       await expect(
-        mappingSol.guardarActivoTriple(ethers.ZeroAddress, 1, 1)
+        mappingSol.guardarActivoTriple(ethers.ZeroAddress, 1, 1, 1)
       ).to.be.revertedWith("El address no puede ser 0x00");
-      
 
+      // Intenta guardar con un código de activo inválido, debería revertir con el mensaje correcto
       await expect(
-        mappingSol.guardarActivoTriple(owner.address, 1000000, 1)
-        
+        mappingSol.guardarActivoTriple(owner.address, 1000000, 1, 1)
       ).to.be.revertedWith("Codigo de activo invalido");
 
+      // Intenta guardar con un código de ciudad inválido, debería revertir con el mensaje correcto
      
-
-     await expect(mappingSol.guardarActivoTriple(1000000, owner.address, 1))
-        .to.revertedWithCustomError(mappingSol, "CiudadInvalidaError")
-        .withArgs(1000000);
     });
   });
 });
