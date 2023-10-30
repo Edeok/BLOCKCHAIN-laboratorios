@@ -196,13 +196,14 @@ describe("Cajero Automatico", function () {
       var admin = "0x08Fb288FcC281969A0BBE6773857F99360f2Ca06";
       await setBalance(admin, ethers.toBigInt("100000000000000000000"));
       await impersonateAccount(admin);
-
+    
       var adminSigner = await ethers.provider.getSigner(admin);
       await cajeroAutomatico.connect(adminSigner).cambiarPausado();
-
+    
       await expect(
         cajeroAutomatico.connect(otherAccounts[0]).retirar(100)
       ).to.be.revertedWith("El contrato esta pausado");
     });
+    
   });
 });

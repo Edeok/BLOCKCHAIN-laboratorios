@@ -89,7 +89,7 @@ contract Desafio_3 {
     // - disminuir el balance total del cajero automático en '_cantidad'
     // - emitir evento 'Withdraw'
 
-    function retirar(uint256 _cantidad) public {
+    function retirar(uint256 _cantidad) public cuandoPausado() {
         require(balances[msg.sender] >= _cantidad,"Saldo insuficiente");
         
         balances[msg.sender] -= _cantidad;
@@ -119,8 +119,20 @@ contract Desafio_3 {
     // - cambiar el boolean 'pausado' a su valor contrario
     // - emitir
 
-    function cambiarPausado() public soloAdmin {
-          require(!pausado, 'El contrato esta pausado');
-          
-     }
+ modifier cuandoPausado() {
+    require(!pausado, "El contrato esta pausado");
+    _;
 }
+
+event PausadoCambiado(bool pausado);
+
+function cambiarPausado() public soloAdmin {
+    pausado = !pausado;
+    emit PausadoCambiado(pausado);
+}
+
+}
+
+
+
+
