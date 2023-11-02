@@ -8,10 +8,15 @@ interface IMiPrimerTKN {
     function mint(address to, uint256 amount) external;
     function burn(address from, uint256 amount) external;
     function balanceOf(address account) external view returns (uint256);
+    function addToWhiteList(address _account) external;
+    function removeFromWhitelist(address _account) external;
 }
 
 contract AirdropOne is Pausable, AccessControl {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+
 
     uint256 public constant totalAirdropMax = 10_000_000 * 10**18;
     uint256 public constant quemaTokensParticipar = 10 * 10**18;
@@ -27,53 +32,76 @@ contract AirdropOne is Pausable, AccessControl {
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(PAUSER_ROLE, msg.sender);
+        _setupRole(MINTER_ROLE, msg.sender);
+        _setupRole(BURNER_ROLE, msg.sender);
+
     }
+
+    function min() external view {
+        require(hasRole(MINTER_ROLE, msg.sender), "MINTER_ROLE");
+    }
+
+     function bur() external view {
+        require(hasRole(BURNER_ROLE, msg.sender), "BURNER_ROLE");
+    }
+
+    
+   
+
+    function addToWhiteList(address _account) external onlyRole(MINTER_ROLE) {
+    require(!whiteList[_account], "Address is already in the whitelist");
+    whiteList[_account] = true;
+   
+}
+
+function removeFromWhitelist(address _account) external onlyRole(MINTER_ROLE) {
+    require(whiteList[_account], "Address is not in the whitelist");
+    whiteList[_account] = false;
+   
+}
+
+ 
 
     function participateInAirdrop() public whenNotPaused {
-        require(whiteList[msg.sender], "Not in whitelist");
-        require(!haSolicitado[msg.sender], "Already participated");
-        require(airdropGivenSoFar + quemaTokensParticipar <= totalAirdropMax, "Airdrop limit reached");
+    require(whiteList[msg.sender], "No esta en lista blanca");
+    require(!haSolicitado[msg.sender], "Ya ha participado");
+    
+    // Generar un número aleatorio de tokens (simplificado aquí)
+    uint256 tokensToReceive = _getRandomNumberBelow1000();
 
-        // Generate a random number of tokens (simplified here)
-        uint256 tokensToReceive = _getRandomNumberBelow1000();
+    // Actualizar el recuento de distribución de tokens
+    require(airdropGivenSoFar + tokensToReceive <= totalAirdropMax, "Airdrop limit reached");
+    airdropGivenSoFar += tokensToReceive;
 
-        // Update the token distribution count
-        airdropGivenSoFar += tokensToReceive;
+    // Marcar que el usuario ha participado
+    haSolicitado[msg.sender] = true;
 
-        // Mark that the user has participated
-        haSolicitado[msg.sender] = true;
-
-        // Transfer the tokens
-        IMiPrimerTKN(miPrimerTokenAdd).mint(msg.sender, tokensToReceive);
+    // Transferir los tokens
+    IMiPrimerTKN(miPrimerTokenAdd).mint(msg.sender, tokensToReceive);
     }
 
-    function burnMyTokensToParticipate() public whenNotPaused {
-        require(!haSolicitado[msg.sender], "Already participated");
-        require(IMiPrimerTKN(miPrimerTokenAdd).balanceOf(msg.sender) >= quemaTokensParticipar, "Insufficient tokens");
 
-        // Burn the required tokens
-        IMiPrimerTKN(miPrimerTokenAdd).burn(msg.sender, quemaTokensParticipar);
 
-        // Mark that the user has participated
-        haSolicitado[msg.sender] = true;
-    }
 
-    // Helper function to add an address to the whitelist
-    function addToWhiteList(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        whiteList[_account] = true;
-    }
+   function quemarMisTokensParaParticipar() public whenNotPaused {
+    require(haSolicitado[msg.sender], "Usted aun no ha participado");
+    require(IMiPrimerTKN(miPrimerTokenAdd).balanceOf(msg.sender) >= quemaTokensParticipar, "No tiene suficientes tokens para quemar");
 
-    // Helper function to remove an address from the whitelist
-    function removeFromWhitelist(address _account) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        whiteList[_account] = false;
-    }
+    // Quemar los tokens requeridos
+    IMiPrimerTKN(miPrimerTokenAdd).burn(msg.sender, quemaTokensParticipar);
 
-    // Helper function to pause the contract
+    // Marcar que el usuario ha participado
+    haSolicitado[msg.sender] = false;
+}
+
+
+
+    // Función auxiliar para pausar el contrato
     function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    // Helper function to unpause the contract
+    // Función auxiliar para reanudar el contrato
     function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
     }
@@ -83,7 +111,7 @@ contract AirdropOne is Pausable, AccessControl {
         return random * 10**18;
     }
 
-    // Function to set the token address
+    // Función para establecer la dirección del token
     function setTokenAddress(address _tokenAddress) external {
         miPrimerTokenAdd = _tokenAddress;
     }

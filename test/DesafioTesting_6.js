@@ -1,7 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-const getRole = (role) => ethers.utils.toUtf8Bytes(role);
+
+const getRole = (role) => ethers.keccak256(ethers.toUtf8Bytes(role));
 
 
 const MINTER_ROLE = getRole("MINTER_ROLE");
