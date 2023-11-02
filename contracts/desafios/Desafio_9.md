@@ -215,5 +215,5 @@ npx hardhat --network mumbai run scripts/[ruta archivo airdrop].js
 
 ## Tarea
 
-1. Pega aquí la transacción hash de Mumbai luego de participar en Airdrop:
-2. Pega aquí la transacción hash de Sepolia que acuña los tokens ERC20:
+1. Pega aquí la transacción hash de Mumbai luego de participar en Airdrop:0x1BaBFBD59CE658d01C09686d53a5AE5Bd55ad666
+2. Pega aquí la transacción hash de Sepolia que acuña los tokens ERC20:0xd48df0729aa906E8ceaa5199284DFBc884240690
